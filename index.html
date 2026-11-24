@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PetCare · Panel de control</title>
+<script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
+<style>
+  :root {
+    --fondo: #f4f1ec;
+    --tarjeta: #ffffff;
+    --texto: #2b2a28;
+    --suave: #77736c;
+    --borde: #e3ded5;
+    --verde: #2f8f5b;
+    --verde-claro: #e3f3ea;
+    --rojo: #c0392b;
+    --rojo-claro: #fbe7e4;
+    --ambar: #b7791f;
+    --ambar-claro: #fdf2dd;
+    --azul: #2c6e9b;
+    --azul-claro: #e3eef6;
+    --acento: #e07a3f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--fondo);
+    color: var(--texto);
+  }
+  .contenedor { max-width: 920px; margin: 0 auto; padding: 20px 16px 48px; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+  }
+  .marca { display: flex; align-items: center; gap: 10px; }
+  .marca h1 { margin: 0; font-size: 1.6rem; letter-spacing: -0.5px; }
+  .marca span { color: var(--suave); font-size: 0.9rem; }
+  .logo { width: 44px; height: 44px; }
+
+  .insignias { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .insignia {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 999px; font-size: 0.85rem;
+    background: var(--tarjeta); border: 1px solid var(--borde);
+  }
+  .punto { width: 9px; height: 9px; border-radius: 50%; background: #bbb; }
+  .ok .punto { background: var(--verde); }
+  .mal .punto { background: var(--rojo); }
+  .espera .punto { background: var(--ambar); }
+
+  .tarjeta {
+    background: var(--tarjeta); border: 1px solid var(--borde);
+    border-radius: 14px; padding: 18px;
+  }
+  h2 { font-size: 1.05rem; margin: 0 0 14px; }
+
+  .rejilla { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 14px; }
+  .sensor .titulo { color: var(--suave); font-size: 0.85rem; margin-bottom: 6px; }
+  .sensor .valor { font-size: 1.35rem; font-weight: 650; margin-bottom: 4px; }
+  .sensor .detalle { color: var(--suave); font-size: 0.85rem; }
+  .sensor.alerta { border-color: var(--rojo); background: var(--rojo-claro); }
+  .sensor.aviso { border-color: var(--ambar); background: var(--ambar-claro); }
+  .sensor.bien { border-color: var(--verde); background: var(--verde-claro); }
+
+  .controles { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  button {
+    font: inherit; border: none; border-radius: 10px; padding: 14px 16px;
+    font-weight: 600; cursor: pointer; transition: opacity .15s, transform .05s;
+  }
+  button:active { transform: scale(0.98); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-comida { background: var(--acento); color: #fff; }
+  .btn-agua { background: var(--azul); color: #fff; }
+  .btn-parar { background: var(--tarjeta); color: var(--rojo); border: 1.5px solid var(--rojo); }
+  .btn-secundario { background: transparent; color: var(--suave); padding: 6px 10px; font-weight: 500; }
+  .nota { color: var(--suave); font-size: 0.82rem; margin: 12px 0 0; }
+
+  .dos-columnas { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-top: 14px; }
+  ul.lista { list-style: none; padding: 0; margin: 0; }
+  ul.lista li {
+    padding: 9px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 0.9rem;
+    display: flex; justify-content: space-between; gap: 10px;
+  }
+  ul.lista li .hora { color: var(--suave); font-size: 0.8rem; white-space: nowrap; }
+  .a-rojo { background: var(--rojo-claro); }
+  .a-ambar { background: var(--ambar-claro); }
+  .a-verde { background: var(--verde-claro); }
+  .a-gris { background: #f1efeb; }
+  .vacio { color: var(--suave); font-size: 0.9rem; }
+
+  /* Pantalla de acceso */
+  #acceso { max-width: 400px; margin: 60px auto; }
+  #acceso .marca { justify-content: center; margin-bottom: 18px; }
+  label { display: block; font-size: 0.85rem; color: var(--suave); margin: 12px 0 4px; }
+  input[type=text], input[type=password] {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--borde);
+    border-radius: 9px; font: inherit; background: #fff;
+  }
+  .casilla { display: flex; align-items: center; gap: 8px; margin: 14px 0; font-size: 0.88rem; }
+  .error { color: var(--rojo); font-size: 0.88rem; min-height: 1.2em; margin-top: 10px; }
+  #btnEntrar { width: 100%; background: var(--texto); color: #fff; margin-top: 4px; }
+  .oculto { display: none !important; }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <!-- ============ PANTALLA DE ACCESO ============ -->
+  <div id="acceso" class="tarjeta">
+    <div class="marca">
+      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="30" fill="#e07a3f"/>
+        <ellipse cx="32" cy="40" rx="11" ry="9" fill="#fff"/>
+        <ellipse cx="19" cy="27" rx="5" ry="6.5" fill="#fff"/>
+        <ellipse cx="45" cy="27" rx="5" ry="6.5" fill="#fff"/>
+        <ellipse cx="26" cy="17" rx="4.5" ry="6" fill="#fff"/>
+        <ellipse cx="38" cy="17" rx="4.5" ry="6" fill="#fff"/>
+      </svg>
+      <div><h1>PetCare</h1><span>Comedero inteligente</span></div>
+    </div>
+    <p class="vacio">Ingresa con tus datos de Adafruit IO. La clave no se guarda en esta página: solo queda en tu navegador.</p>
+    <label for="usuario">Usuario de Adafruit IO</label>
+    <input id="usuario" type="text" value="sergio_toro" autocomplete="username">
+    <label for="clave">AIO Key</label>
+    <input id="clave" type="password" autocomplete="current-password" placeholder="aio_xxxxxxxxxxxx">
+    <div class="casilla">
+      <input id="recordar" type="checkbox">
+      <label for="recordar" style="margin:0">Recordar en este dispositivo</label>
+    </div>
+    <button id="btnEntrar">Entrar</button>
+    <div id="errorAcceso" class="error"></div>
+  </div>
+
+  <!-- ============ PANEL PRINCIPAL ============ -->
+  <div id="panel" class="oculto">
+    <header>
+      <div class="marca">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="32" cy="32" r="30" fill="#e07a3f"/>
+          <ellipse cx="32" cy="40" rx="11" ry="9" fill="#fff"/>
+          <ellipse cx="19" cy="27" rx="5" ry="6.5" fill="#fff"/>
+          <ellipse cx="45" cy="27" rx="5" ry="6.5" fill="#fff"/>
+          <ellipse cx="26" cy="17" rx="4.5" ry="6" fill="#fff"/>
+          <ellipse cx="38" cy="17" rx="4.5" ry="6" fill="#fff"/>
+        </svg>
+        <div><h1>PetCare</h1><span>Panel de control</span></div>
+      </div>
+      <div class="insignias">
+        <span id="insigniaNube" class="insignia espera"><span class="punto"></span><span id="txtNube">Conectando…</span></span>
+        <span id="insigniaEsp" class="insignia espera"><span class="punto"></span><span id="txtEsp">ESP32: esperando datos</span></span>
+        <button id="btnSalir" class="btn-secundario">Salir</button>
+      </div>
+    </header>
+
+    <!-- Sensores -->
+    <div class="rejilla">
+      <div id="tMascota" class="tarjeta sensor">
+        <div class="titulo">🐾 Mascota</div>
+        <div id="vMascota" class="valor">—</div>
+        <div id="dMascota" class="detalle">Sin datos todavía</div>
+      </div>
+      <div id="tAgua" class="tarjeta sensor">
+        <div class="titulo">💧 Agua</div>
+        <div id="vAgua" class="valor">—</div>
+        <div id="dAgua" class="detalle">Sin datos todavía</div>
+      </div>
+      <div id="tComida" class="tarjeta sensor">
+        <div class="titulo">🍖 Comida</div>
+        <div id="vComida" class="valor">—</div>
+        <div id="dComida" class="detalle">Sin datos todavía</div>
+      </div>
+    </div>
+
+    <!-- Controles -->
+    <div class="tarjeta">
+      <h2>Controles</h2>
+      <div class="controles">
+        <button id="btnComida" class="btn-comida">🍖 Dispensar comida</button>
+        <button id="btnAgua" class="btn-agua">💧 Dar agua (3 s)</button>
+        <button id="btnParar" class="btn-parar">⏹ Apagar bomba</button>
+      </div>
+      <p class="nota">La compuerta se cierra sola a los 2 segundos y la bomba se apaga sola a los 3. Entre una orden y otra hay que esperar 5 segundos.</p>
+    </div>
+
+    <div class="dos-columnas">
+      <div class="tarjeta">
+        <h2>Alertas</h2>
+        <ul id="listaAlertas" class="lista"><li class="vacio">Sin alertas.</li></ul>
+      </div>
+      <div class="tarjeta">
+        <h2>Actividad reciente</h2>
+        <ul id="listaEventos" class="lista"><li class="vacio">Sin actividad todavía.</li></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= CONFIGURACIÓN =================
+const URL_MQTT = "wss://io.adafruit.com:443/mqtt/";
+const API = "https://io.adafruit.com/api/v2/";
+const SEGUNDOS_DESCONECTADO = 60;   // el ESP32 publica cada 20 s
+const ESPERA_ENTRE_ORDENES = 5000;  // ms, igual que en el ESP32
+
+// ================= ESTADO =================
+let cliente = null;
+let usuario = "";
+let clave = "";
+let ultimoDato = null;        // fecha del último estado recibido
+let ultimoEstado = null;
+let errorComunicacion = null;
+const eventos = [];
+
+const $ = (id) => document.getElementById(id);
+
+// ---------- Guardado de credenciales en el navegador ----------
+function guardarCredenciales(u, k, recordar) {
+  try {
+    const almacen = recordar ? localStorage : sessionStorage;
+    almacen.setItem("petcare_usuario", u);
+    almacen.setItem("petcare_clave", k);
+  } catch (e) { /* el navegador no permite guardar: no pasa nada */ }
+}
+function leerCredenciales() {
+  try {
+    for (const almacen of [sessionStorage, localStorage]) {
+      const u = almacen.getItem("petcare_usuario");
+      const k = almacen.getItem("petcare_clave");
+      if (u && k) return { u, k };
+    }
+  } catch (e) {}
+  return null;
+}
+function borrarCredenciales() {
+  try {
+    for (const almacen of [sessionStorage, localStorage]) {
+      almacen.removeItem("petcare_usuario");
+      almacen.removeItem("petcare_clave");
+    }
+  } catch (e) {}
+}
+
+// ---------- Utilidades ----------
+function hora(fecha = new Date()) {
+  return fecha.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+function registrar(texto, color = "a-gris") {
+  eventos.unshift({ texto, color, hora: hora() });
+  if (eventos.length > 12) eventos.pop();
+  $("listaEventos").innerHTML = eventos
+    .map(e => `<li class="${e.color}"><span>${e.texto}</span><span class="hora">${e.hora}</span></li>`)
+    .join("");
+}
+function insignia(id, txtId, clase, texto) {
+  $(id).className = "insignia " + clase;
+  $(txtId).textContent = texto;
+}
+function tema(feed) { return `${usuario}/feeds/${feed}`; }
+
+// ---------- Acceso ----------
+async function entrar(u, k, recordar) {
+  $("errorAcceso").textContent = "";
+  $("btnEntrar").disabled = true;
+  $("btnEntrar").textContent = "Verificando…";
+
+  // 1) Verificar la clave y traer el último estado guardado en Adafruit
+  try {
+    const r = await fetch(`${API}${encodeURIComponent(u)}/feeds/petcare-estado/data/last`, {
+      headers: { "X-AIO-Key": k }
+    });
+    if (r.status === 401 || r.status === 403) {
+      throw new Error("Usuario o AIO Key incorrectos.");
+    }
+    if (r.ok) {
+      const dato = await r.json();
+      procesarEstado(dato.value, new Date(dato.created_at));
+    }
+  } catch (e) {
+    if (e.message.includes("incorrectos")) {
+      $("errorAcceso").textContent = e.message;
+      $("btnEntrar").disabled = false;
+      $("btnEntrar").textContent = "Entrar";
+      return;
+    }
+    // Si falla por otra razón (sin internet, bloqueo del navegador), seguimos con MQTT
+  }
+
+  usuario = u;
+  clave = k;
+  guardarCredenciales(u, k, recordar);
+  $("acceso").classList.add("oculto");
+  $("panel").classList.remove("oculto");
+  $("btnEntrar").disabled = false;
+  $("btnEntrar").textContent = "Entrar";
+  conectarMqtt();
+}
+
+function salir() {
+  if (cliente) cliente.end(true);
+  cliente = null;
+  borrarCredenciales();
+  $("clave").value = "";
+  $("panel").classList.add("oculto");
+  $("acceso").classList.remove("oculto");
+}
+
+// ---------- MQTT ----------
+function conectarMqtt() {
+  insignia("insigniaNube", "txtNube", "espera", "Conectando…");
+  cliente = mqtt.connect(URL_MQTT, {
+    username: usuario,
+    password: clave,
+    clientId: "petcare-web-" + Math.random().toString(16).slice(2, 10),
+    reconnectPeriod: 5000,
+    connectTimeout: 10000,
+  });
+
+  cliente.on("connect", () => {
+    errorComunicacion = null;
+    insignia("insigniaNube", "txtNube", "ok", "Nube conectada");
+    cliente.subscribe(tema("petcare-estado"));
+    registrar("Conectado a Adafruit IO", "a-verde");
+    actualizarAlertas();
+  });
+
+  cliente.on("message", (t, mensaje) => {
+    if (t === tema("petcare-estado")) {
+      procesarEstado(mensaje.toString(), new Date());
+    }
+  });
+
+  cliente.on("reconnect", () => insignia("insigniaNube", "txtNube", "espera", "Reconectando…"));
+  cliente.on("offline", () => {
+    insignia("insigniaNube", "txtNube", "mal", "Sin conexión a la nube");
+    errorComunicacion = "No hay conexión con Adafruit IO.";
+    actualizarAlertas();
+  });
+  cliente.on("error", (e) => {
+    insignia("insigniaNube", "txtNube", "mal", "Error de conexión");
+    errorComunicacion = "Error de comunicación: " + e.message;
+    actualizarAlertas();
+  });
+}
+
+function enviarOrden(orden, descripcion, boton) {
+  if (!cliente || !cliente.connected) {
+    registrar("No se pudo enviar: sin conexión", "a-rojo");
+    return;
+  }
+  cliente.publish(tema("petcare-comandos"), orden, {}, (err) => {
+    if (err) {
+      registrar("Error al enviar " + orden, "a-rojo");
+    } else {
+      registrar(descripcion, "a-gris");
+    }
+  });
+  // Bloquear los botones de acción unos segundos para no repetir órdenes
+  if (boton) {
+    for (const id of ["btnComida", "btnAgua"]) $(id).disabled = true;
+    setTimeout(() => { for (const id of ["btnComida", "btnAgua"]) $(id).disabled = false; }, ESPERA_ENTRE_ORDENES);
+  }
+}
+
+// ---------- Mostrar datos ----------
+function procesarEstado(texto, fecha) {
+  let e;
+  try { e = JSON.parse(texto); } catch (err) { return; }   // mensajes de prueba antiguos
+  if (typeof e !== "object" || e === null || !("mascota" in e)) return;
+
+  const anterior = ultimoEstado;
+  ultimoEstado = e;
+  ultimoDato = fecha;
+
+  // Mascota
+  $("vMascota").textContent = e.mascota ? "Detectada" : "No está cerca";
+  $("dMascota").textContent = e.d_mascota != null ? `Distancia: ${e.d_mascota} cm` : "Lectura no válida";
+  $("tMascota").className = "tarjeta sensor " + (e.mascota ? "aviso" : "");
+
+  // Agua
+  $("vAgua").textContent = e.d_agua == null ? "Sin lectura" : (e.poca_agua ? "Nivel bajo" : "Nivel bien");
+  $("dAgua").textContent = e.d_agua != null ? `Distancia a la superficie: ${e.d_agua} cm` : "Revisa el sensor de agua";
+  $("tAgua").className = "tarjeta sensor " + (e.d_agua == null ? "" : (e.poca_agua ? "alerta" : "bien"));
+
+  // Comida
+  $("vComida").textContent = e.d_comida == null ? "Sin lectura" : (e.poca_comida ? "Nivel bajo" : "Nivel bien");
+  $("dComida").textContent = e.d_comida != null ? `Distancia a la superficie: ${e.d_comida} cm` : "Revisa el sensor de comida";
+  $("tComida").className = "tarjeta sensor " + (e.d_comida == null ? "" : (e.poca_comida ? "alerta" : "bien"));
+
+  // Eventos cuando algo cambia
+  if (anterior) {
+    if (e.mascota && !anterior.mascota) registrar("🐾 Mascota detectada", "a-ambar");
+    if (e.poca_agua && !anterior.poca_agua) registrar("💧 El agua está baja", "a-rojo");
+    if (e.poca_comida && !anterior.poca_comida) registrar("🍖 La comida está baja", "a-rojo");
+  }
+
+  revisarConexionEsp();
+  actualizarAlertas();
+}
+
+function espConectado() {
+  if (!ultimoDato) return false;
+  return (Date.now() - ultimoDato.getTime()) / 1000 < SEGUNDOS_DESCONECTADO;
+}
+
+function revisarConexionEsp() {
+  if (!ultimoDato) {
+    insignia("insigniaEsp", "txtEsp", "espera", "ESP32: esperando datos");
+  } else if (espConectado()) {
+    insignia("insigniaEsp", "txtEsp", "ok", "ESP32 en línea · " + hora(ultimoDato));
+  } else {
+    insignia("insigniaEsp", "txtEsp", "mal", "ESP32 desconectado");
+  }
+}
+
+function actualizarAlertas() {
+  const alertas = [];
+  if (errorComunicacion) alertas.push(["⚠️ " + errorComunicacion, "a-rojo"]);
+  if (ultimoDato && !espConectado()) {
+    alertas.push([`📡 ESP32 desconectado (último dato a las ${hora(ultimoDato)})`, "a-rojo"]);
+  }
+  if (ultimoEstado) {
+    if (ultimoEstado.poca_agua) alertas.push(["💧 Nivel de agua bajo", "a-rojo"]);
+    if (ultimoEstado.poca_comida) alertas.push(["🍖 Nivel de comida bajo", "a-rojo"]);
+    if (ultimoEstado.mascota) alertas.push(["🐾 Mascota detectada junto al comedero", "a-ambar"]);
+  }
+  $("listaAlertas").innerHTML = alertas.length
+    ? alertas.map(([t, c]) => `<li class="${c}"><span>${t}</span></li>`).join("")
+    : `<li class="vacio">Sin alertas. Todo en orden.</li>`;
+}
+
+// Revisar cada 5 s si el ESP32 dejó de enviar datos
+setInterval(() => { revisarConexionEsp(); actualizarAlertas(); }, 5000);
+
+// ---------- Botones ----------
+$("btnEntrar").addEventListener("click", () => {
+  const u = $("usuario").value.trim();
+  const k = $("clave").value.trim();
+  if (!u || !k) { $("errorAcceso").textContent = "Escribe el usuario y la AIO Key."; return; }
+  entrar(u, k, $("recordar").checked);
+});
+$("clave").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btnEntrar").click(); });
+$("btnSalir").addEventListener("click", salir);
+$("btnComida").addEventListener("click", () => enviarOrden("DISPENSAR", "🍖 Orden enviada: dispensar comida", true));
+$("btnAgua").addEventListener("click", () => enviarOrden("AGUA_ON", "💧 Orden enviada: dar agua", true));
+$("btnParar").addEventListener("click", () => enviarOrden("AGUA_OFF", "⏹ Orden enviada: apagar bomba", false));
+
+// Entrar automáticamente si ya había credenciales guardadas
+const guardadas = leerCredenciales();
+if (guardadas) {
+  $("usuario").value = guardadas.u;
+  entrar(guardadas.u, guardadas.k, false);
+}
+</script>
+</body>
+</html>
