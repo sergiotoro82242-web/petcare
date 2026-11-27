@@ -3,134 +3,266 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PetCare · Panel de control</title>
+<title>PetCare 🐾 Comedero inteligente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
 <style>
   :root {
-    --fondo: #f4f1ec;
-    --tarjeta: #ffffff;
-    --texto: #2b2a28;
-    --suave: #77736c;
-    --borde: #e3ded5;
-    --verde: #2f8f5b;
-    --verde-claro: #e3f3ea;
-    --rojo: #c0392b;
-    --rojo-claro: #fbe7e4;
-    --ambar: #b7791f;
-    --ambar-claro: #fdf2dd;
-    --azul: #2c6e9b;
-    --azul-claro: #e3eef6;
-    --acento: #e07a3f;
+    --texto: #4a4063;
+    --suave: #8a81a3;
+    --blanco: #ffffff;
+    --borde: #ece6f6;
+
+    --azul: #d6ecfb;      --azul-medio: #a9d4f2;   --azul-oscuro: #3f7fae;
+    --rosa: #fde1ec;      --rosa-medio: #f7b8d0;   --rosa-oscuro: #c4568a;
+    --lila: #ebe3fb;      --lila-medio: #cbb8f2;   --lila-oscuro: #7a5fc0;
+    --menta: #dcf5ea;     --menta-oscuro: #3e9672;
+    --durazno: #ffe9d9;   --durazno-oscuro: #c97a3d;
+    --rojo-suave: #ffe0e4; --rojo: #c4475e;
+
+    --sombra: 0 10px 30px -12px rgba(122, 95, 192, 0.28);
+    --radio: 24px;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: var(--fondo);
+    font-family: "Nunito", system-ui, sans-serif;
     color: var(--texto);
+    min-height: 100vh;
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='%23c9b6ee' fill-opacity='0.16'%3E%3Cellipse cx='30' cy='38' rx='9' ry='7.5'/%3E%3Ccircle cx='19' cy='27' r='3.6'/%3E%3Ccircle cx='26.5' cy='22' r='3.6'/%3E%3Ccircle cx='34' cy='22' r='3.6'/%3E%3Ccircle cx='41' cy='27' r='3.6'/%3E%3Cellipse cx='90' cy='98' rx='9' ry='7.5'/%3E%3Ccircle cx='79' cy='87' r='3.6'/%3E%3Ccircle cx='86.5' cy='82' r='3.6'/%3E%3Ccircle cx='94' cy='82' r='3.6'/%3E%3Ccircle cx='101' cy='87' r='3.6'/%3E%3C/g%3E%3C/svg%3E"),
+      linear-gradient(135deg, #e3f1fc 0%, #fbe6f0 50%, #ece4fb 100%);
+    background-attachment: fixed;
   }
-  .contenedor { max-width: 920px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1, h2, h3, .fredoka { font-family: "Fredoka", "Nunito", sans-serif; }
+  .contenedor { max-width: 960px; margin: 0 auto; padding: 22px 16px 40px; }
 
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+  /* ---------- Tarjetas ---------- */
+  .tarjeta {
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: blur(6px);
+    border: 2px solid var(--blanco);
+    border-radius: var(--radio);
+    padding: 20px;
+    box-shadow: var(--sombra);
   }
+  h2 { font-size: 1.25rem; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+  h3 { font-size: 1rem; margin: 0 0 10px; font-weight: 600; }
+
+  /* ---------- Encabezado ---------- */
+  header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
   .marca { display: flex; align-items: center; gap: 10px; }
-  .marca h1 { margin: 0; font-size: 1.6rem; letter-spacing: -0.5px; }
-  .marca span { color: var(--suave); font-size: 0.9rem; }
-  .logo { width: 44px; height: 44px; }
-
+  .marca h1 { margin: 0; font-size: 1.9rem; color: var(--lila-oscuro); letter-spacing: -0.3px; }
+  .marca .sub { color: var(--suave); font-size: 0.9rem; font-weight: 600; }
+  .logo { width: 48px; height: 48px; flex-shrink: 0; }
   .insignias { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .insignia {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 12px; border-radius: 999px; font-size: 0.85rem;
-    background: var(--tarjeta); border: 1px solid var(--borde);
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 14px; border-radius: 999px; font-size: 0.85rem; font-weight: 700;
+    background: var(--blanco); box-shadow: 0 4px 14px -8px rgba(122, 95, 192, 0.5);
   }
-  .punto { width: 9px; height: 9px; border-radius: 50%; background: #bbb; }
-  .ok .punto { background: var(--verde); }
-  .mal .punto { background: var(--rojo); }
-  .espera .punto { background: var(--ambar); }
+  .punto { width: 10px; height: 10px; border-radius: 50%; background: #cfc8dc; }
+  .ok .punto { background: var(--menta-oscuro); box-shadow: 0 0 0 4px var(--menta); }
+  .mal .punto { background: var(--rojo); box-shadow: 0 0 0 4px var(--rojo-suave); }
+  .espera .punto { background: var(--durazno-oscuro); box-shadow: 0 0 0 4px var(--durazno); animation: latido 1.4s infinite; }
+  @keyframes latido { 50% { opacity: 0.4; } }
 
-  .tarjeta {
-    background: var(--tarjeta); border: 1px solid var(--borde);
-    border-radius: 14px; padding: 18px;
+  /* ---------- Bienvenida ---------- */
+  .bienvenida {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    background: linear-gradient(120deg, var(--azul) 0%, var(--lila) 55%, var(--rosa) 100%);
+    margin-bottom: 16px; overflow: hidden; position: relative;
   }
-  h2 { font-size: 1.05rem; margin: 0 0 14px; }
+  .bienvenida h2 { font-size: 1.5rem; margin-bottom: 4px; color: var(--texto); }
+  .bienvenida p { margin: 0; color: var(--texto); opacity: 0.8; font-weight: 600; }
+  .mascotas { display: flex; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .mascotas svg { width: 92px; height: 92px; filter: drop-shadow(0 6px 8px rgba(122, 95, 192, 0.25)); }
+  .mascotas .perro { animation: saltito 3s ease-in-out infinite; }
+  .mascotas .gato { animation: saltito 3s ease-in-out 1.5s infinite; }
+  @keyframes saltito { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
-  .rejilla { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 14px; }
-  .sensor .titulo { color: var(--suave); font-size: 0.85rem; margin-bottom: 6px; }
-  .sensor .valor { font-size: 1.35rem; font-weight: 650; margin-bottom: 4px; }
-  .sensor .detalle { color: var(--suave); font-size: 0.85rem; }
-  .sensor.alerta { border-color: var(--rojo); background: var(--rojo-claro); }
-  .sensor.aviso { border-color: var(--ambar); background: var(--ambar-claro); }
-  .sensor.bien { border-color: var(--verde); background: var(--verde-claro); }
+  /* ---------- Sensores ---------- */
+  .rejilla { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); margin-bottom: 16px; }
+  .sensor { position: relative; border-width: 2px; transition: background .3s, border-color .3s; }
+  .sensor .icono {
+    width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center;
+    font-size: 1.5rem; margin-bottom: 10px;
+  }
+  #tMascota .icono { background: var(--lila); }
+  #tAgua .icono { background: var(--azul); }
+  #tComida .icono { background: var(--rosa); }
+  .sensor .titulo { color: var(--suave); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+  .sensor .valor { font-family: "Fredoka", sans-serif; font-size: 1.45rem; font-weight: 600; margin-bottom: 4px; }
+  .sensor .detalle { color: var(--suave); font-size: 0.86rem; font-weight: 600; }
+  .sensor.bien { background: var(--menta); border-color: #b9ead3; }
+  .sensor.bien .valor { color: var(--menta-oscuro); }
+  .sensor.alerta { background: var(--rojo-suave); border-color: #f8bcc7; }
+  .sensor.alerta .valor { color: var(--rojo); }
+  .sensor.aviso { background: var(--lila); border-color: var(--lila-medio); }
+  .sensor.aviso .valor { color: var(--lila-oscuro); }
 
-  .controles { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  /* ---------- Botones ---------- */
   button {
-    font: inherit; border: none; border-radius: 10px; padding: 14px 16px;
-    font-weight: 600; cursor: pointer; transition: opacity .15s, transform .05s;
+    font: inherit; font-weight: 800; border: none; border-radius: 16px;
+    padding: 14px 16px; cursor: pointer;
+    transition: transform .08s, box-shadow .15s, opacity .15s, filter .15s;
   }
-  button:active { transform: scale(0.98); }
+  button:hover:not(:disabled) { filter: brightness(1.03); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(1px) scale(0.98); }
   button:disabled { opacity: 0.45; cursor: not-allowed; }
-  .btn-comida { background: var(--acento); color: #fff; }
-  .btn-agua { background: var(--azul); color: #fff; }
-  .btn-parar { background: var(--tarjeta); color: var(--rojo); border: 1.5px solid var(--rojo); }
-  .btn-secundario { background: transparent; color: var(--suave); padding: 6px 10px; font-weight: 500; }
-  .nota { color: var(--suave); font-size: 0.82rem; margin: 12px 0 0; }
+  .btn-comida { background: var(--rosa-medio); color: #7a2950; box-shadow: 0 6px 0 -1px #e99bbb; }
+  .btn-agua { background: var(--azul-medio); color: #1f557e; box-shadow: 0 6px 0 -1px #87bfe6; }
+  .btn-borde { background: var(--blanco); color: var(--texto); border: 2px solid var(--borde); }
+  .btn-borde:hover:not(:disabled) { border-color: var(--lila-medio); }
+  .btn-parar { background: var(--blanco); color: var(--rojo); border: 2px solid #f8bcc7; }
+  .btn-oscuro { background: var(--lila-medio); color: #3f2c7a; box-shadow: 0 6px 0 -1px #b29ce8; }
+  .btn-secundario { background: var(--blanco); color: var(--suave); padding: 8px 14px; font-weight: 700; box-shadow: 0 4px 14px -8px rgba(122, 95, 192, 0.5); }
 
-  .dos-columnas { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-top: 14px; }
+  .grupo-controles { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .controles { display: grid; gap: 10px; padding: 16px; border-radius: 20px; }
+  .controles.comida { background: var(--rosa); }
+  .controles.agua { background: var(--azul); }
+  .fila-botones { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+  .nota { color: var(--suave); font-size: 0.85rem; font-weight: 600; margin: 14px 0 0; line-height: 1.45; }
+
+  /* ---------- Horarios ---------- */
+  .tarjeta-horarios { margin-top: 16px; }
+  .reloj { display: inline-flex; align-items: center; gap: 6px; background: var(--lila); color: var(--lila-oscuro); padding: 4px 12px; border-radius: 999px; font-weight: 800; }
+  .horario {
+    display: grid; grid-template-columns: 1.3fr 1fr 1fr auto; gap: 10px; align-items: end;
+    padding: 12px 14px; border-radius: 18px; margin-bottom: 10px;
+    background: linear-gradient(120deg, var(--lila) 0%, var(--rosa) 100%);
+  }
+  .horario label { margin: 0 0 4px; font-size: 0.8rem; }
+  .horario input { width: 100%; }
+  .btn-quitar { background: var(--blanco); color: var(--rojo); padding: 10px 13px; font-size: 1rem; border-radius: 12px; }
+  .acciones-horario { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .acciones-horario button { flex: 1; min-width: 170px; }
+  .estado-horarios { font-size: 0.9rem; font-weight: 700; margin-top: 12px; min-height: 1.2em; }
+  .estado-horarios.ok { color: var(--menta-oscuro); }
+  .estado-horarios.pend { color: var(--durazno-oscuro); }
+  .estado-horarios.err { color: var(--rojo); }
+
+  /* ---------- Listas ---------- */
+  .dos-columnas { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-top: 16px; }
   ul.lista { list-style: none; padding: 0; margin: 0; }
   ul.lista li {
-    padding: 9px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 0.9rem;
+    padding: 10px 14px; border-radius: 14px; margin-bottom: 8px; font-size: 0.92rem; font-weight: 700;
     display: flex; justify-content: space-between; gap: 10px;
   }
-  ul.lista li .hora { color: var(--suave); font-size: 0.8rem; white-space: nowrap; }
-  .a-rojo { background: var(--rojo-claro); }
-  .a-ambar { background: var(--ambar-claro); }
-  .a-verde { background: var(--verde-claro); }
-  .a-gris { background: #f1efeb; }
-  .vacio { color: var(--suave); font-size: 0.9rem; }
+  ul.lista li .hora { color: var(--suave); font-size: 0.8rem; white-space: nowrap; font-weight: 600; }
+  .a-rojo { background: var(--rojo-suave); color: #8e2f44; }
+  .a-ambar { background: var(--lila); color: #533d96; }
+  .a-verde { background: var(--menta); color: #2c6e53; }
+  .a-gris { background: #f5f1fb; }
+  .vacio { color: var(--suave); font-size: 0.92rem; font-weight: 600; }
 
-  /* Pantalla de acceso */
-  #acceso { max-width: 400px; margin: 60px auto; }
-  #acceso .marca { justify-content: center; margin-bottom: 18px; }
-  label { display: block; font-size: 0.85rem; color: var(--suave); margin: 12px 0 4px; }
-  input[type=text], input[type=password] {
-    width: 100%; padding: 11px 12px; border: 1px solid var(--borde);
-    border-radius: 9px; font: inherit; background: #fff;
+  /* ---------- Formularios ---------- */
+  label { display: block; font-size: 0.85rem; font-weight: 700; color: var(--suave); margin: 14px 0 5px; }
+  input {
+    padding: 11px 13px; border: 2px solid var(--borde); border-radius: 14px;
+    font: inherit; font-weight: 700; color: var(--texto); background: var(--blanco); outline: none;
+    transition: border-color .15s, box-shadow .15s;
   }
-  .casilla { display: flex; align-items: center; gap: 8px; margin: 14px 0; font-size: 0.88rem; }
-  .error { color: var(--rojo); font-size: 0.88rem; min-height: 1.2em; margin-top: 10px; }
-  #btnEntrar { width: 100%; background: var(--texto); color: #fff; margin-top: 4px; }
+  input:focus { border-color: var(--lila-medio); box-shadow: 0 0 0 4px var(--lila); }
+
+  /* ---------- Acceso ---------- */
+  #acceso { max-width: 420px; margin: 70px auto 20px; text-align: center; position: relative; padding-top: 70px; }
+  #acceso .mascotas { position: absolute; top: -58px; left: 50%; transform: translateX(-50%); }
+  #acceso .mascotas svg { width: 104px; height: 104px; }
+  #acceso h1 { margin: 0; font-size: 2.2rem; color: var(--lila-oscuro); }
+  #acceso .sub { color: var(--suave); font-weight: 700; margin: 4px 0 8px; }
+  #acceso form { text-align: left; }
+  #acceso input { width: 100%; }
+  #btnEntrar { width: 100%; margin-top: 20px; font-size: 1.05rem; }
+  .error { color: var(--rojo); font-size: 0.9rem; font-weight: 700; min-height: 1.2em; margin-top: 12px; text-align: center; }
+
+  footer { text-align: center; color: var(--suave); font-size: 0.85rem; font-weight: 700; margin-top: 26px; }
   .oculto { display: none !important; }
+
+  @media (max-width: 560px) {
+    .horario { grid-template-columns: 1fr 1fr; }
+    .bienvenida { flex-direction: column; text-align: center; }
+    .mascotas svg { width: 76px; height: 76px; }
+    .marca h1 { font-size: 1.6rem; }
+  }
 </style>
 </head>
 <body>
+
+<!-- ============ DIBUJOS (perrito y gatico) ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Perrito -->
+    <symbol id="perrito" viewBox="0 0 120 120">
+      <ellipse cx="60" cy="108" rx="34" ry="6" fill="#c9b6ee" opacity="0.35"/>
+      <ellipse cx="24" cy="52" rx="15" ry="27" fill="#d9a87e" transform="rotate(18 24 52)"/>
+      <ellipse cx="96" cy="52" rx="15" ry="27" fill="#d9a87e" transform="rotate(-18 96 52)"/>
+      <circle cx="60" cy="60" r="40" fill="#f6dcc2"/>
+      <ellipse cx="78" cy="44" rx="13" ry="11" fill="#ebc29c"/>
+      <ellipse cx="60" cy="76" rx="22" ry="17" fill="#fff6ee"/>
+      <circle cx="45" cy="56" r="5.5" fill="#4a4063"/>
+      <circle cx="75" cy="56" r="5.5" fill="#4a4063"/>
+      <circle cx="47" cy="54" r="1.8" fill="#fff"/>
+      <circle cx="77" cy="54" r="1.8" fill="#fff"/>
+      <ellipse cx="60" cy="68" rx="7.5" ry="5.5" fill="#4a4063"/>
+      <path d="M60 73 v5 M60 78 q-6 5 -10 0 M60 78 q6 5 10 0" stroke="#4a4063" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M55 83 q5 12 10 0 z" fill="#f59ab9"/>
+      <ellipse cx="34" cy="70" rx="7" ry="4.5" fill="#f7b8d0" opacity="0.8"/>
+      <ellipse cx="86" cy="70" rx="7" ry="4.5" fill="#f7b8d0" opacity="0.8"/>
+    </symbol>
+
+    <!-- Gatico -->
+    <symbol id="gatico" viewBox="0 0 120 120">
+      <ellipse cx="60" cy="108" rx="34" ry="6" fill="#c9b6ee" opacity="0.35"/>
+      <path d="M22 50 L28 12 L52 32 Z" fill="#b9b0cf"/>
+      <path d="M98 50 L92 12 L68 32 Z" fill="#b9b0cf"/>
+      <path d="M29 42 L32 22 L45 33 Z" fill="#f7b8d0"/>
+      <path d="M91 42 L88 22 L75 33 Z" fill="#f7b8d0"/>
+      <ellipse cx="60" cy="62" rx="42" ry="38" fill="#d6cfe6"/>
+      <path d="M52 28 q8 8 16 0" stroke="#b9b0cf" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M48 26 q12 14 24 0" stroke="#b9b0cf" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.6"/>
+      <ellipse cx="60" cy="78" rx="18" ry="13" fill="#f3effa"/>
+      <path d="M38 58 q6 -6 12 0" stroke="#4a4063" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <path d="M70 58 q6 -6 12 0" stroke="#4a4063" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <path d="M56 70 h8 l-4 5 z" fill="#f59ab9"/>
+      <path d="M60 75 q-5 6 -9 1 M60 75 q5 6 9 1" stroke="#4a4063" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M20 70 h18 M21 78 l17 -3 M100 70 h-18 M99 78 l-17 -3" stroke="#8a81a3" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="34" cy="68" rx="7" ry="4.5" fill="#f7b8d0" opacity="0.8"/>
+      <ellipse cx="86" cy="68" rx="7" ry="4.5" fill="#f7b8d0" opacity="0.8"/>
+    </symbol>
+
+    <!-- Huellita -->
+    <symbol id="huella" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="31" fill="#ebe3fb"/>
+      <ellipse cx="32" cy="40" rx="11" ry="9" fill="#a68ae0"/>
+      <ellipse cx="19" cy="28" rx="5" ry="6.5" fill="#f7b8d0"/>
+      <ellipse cx="45" cy="28" rx="5" ry="6.5" fill="#a9d4f2"/>
+      <ellipse cx="26" cy="18" rx="4.5" ry="6" fill="#a9d4f2"/>
+      <ellipse cx="38" cy="18" rx="4.5" ry="6" fill="#f7b8d0"/>
+    </symbol>
+  </defs>
+</svg>
+
 <div class="contenedor">
 
   <!-- ============ PANTALLA DE ACCESO ============ -->
   <div id="acceso" class="tarjeta">
-    <div class="marca">
-      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
-        <circle cx="32" cy="32" r="30" fill="#e07a3f"/>
-        <ellipse cx="32" cy="40" rx="11" ry="9" fill="#fff"/>
-        <ellipse cx="19" cy="27" rx="5" ry="6.5" fill="#fff"/>
-        <ellipse cx="45" cy="27" rx="5" ry="6.5" fill="#fff"/>
-        <ellipse cx="26" cy="17" rx="4.5" ry="6" fill="#fff"/>
-        <ellipse cx="38" cy="17" rx="4.5" ry="6" fill="#fff"/>
-      </svg>
-      <div><h1>PetCare</h1><span>Comedero inteligente</span></div>
+    <div class="mascotas">
+      <svg class="perro"><use href="#perrito"/></svg>
+      <svg class="gato"><use href="#gatico"/></svg>
     </div>
-    <p class="vacio">Ingresa con tus datos de Adafruit IO. La clave no se guarda en esta página: solo queda en tu navegador.</p>
-    <label for="usuario">Usuario de Adafruit IO</label>
-    <input id="usuario" type="text" value="sergio_toro" autocomplete="username">
-    <label for="clave">AIO Key</label>
-    <input id="clave" type="password" autocomplete="current-password" placeholder="aio_xxxxxxxxxxxx">
-    <div class="casilla">
-      <input id="recordar" type="checkbox">
-      <label for="recordar" style="margin:0">Recordar en este dispositivo</label>
-    </div>
-    <button id="btnEntrar">Entrar</button>
+    <h1>PetCare</h1>
+    <p class="sub">El comedero inteligente de tus peluditos 💕</p>
+    <form onsubmit="return false">
+      <label for="usuario">Usuario</label>
+      <input id="usuario" type="text" autocomplete="username" placeholder="Tu usuario">
+      <label for="clave">Contraseña</label>
+      <input id="clave" type="password" autocomplete="current-password" placeholder="••••••••••">
+      <button id="btnEntrar" class="btn-oscuro" type="button">Entrar 🐾</button>
+    </form>
     <div id="errorAcceso" class="error"></div>
   </div>
 
@@ -138,37 +270,45 @@
   <div id="panel" class="oculto">
     <header>
       <div class="marca">
-        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
-          <circle cx="32" cy="32" r="30" fill="#e07a3f"/>
-          <ellipse cx="32" cy="40" rx="11" ry="9" fill="#fff"/>
-          <ellipse cx="19" cy="27" rx="5" ry="6.5" fill="#fff"/>
-          <ellipse cx="45" cy="27" rx="5" ry="6.5" fill="#fff"/>
-          <ellipse cx="26" cy="17" rx="4.5" ry="6" fill="#fff"/>
-          <ellipse cx="38" cy="17" rx="4.5" ry="6" fill="#fff"/>
-        </svg>
-        <div><h1>PetCare</h1><span>Panel de control</span></div>
+        <svg class="logo"><use href="#huella"/></svg>
+        <div><h1>PetCare</h1><div class="sub">Comedero inteligente</div></div>
       </div>
       <div class="insignias">
         <span id="insigniaNube" class="insignia espera"><span class="punto"></span><span id="txtNube">Conectando…</span></span>
-        <span id="insigniaEsp" class="insignia espera"><span class="punto"></span><span id="txtEsp">ESP32: esperando datos</span></span>
+        <span id="insigniaEsp" class="insignia espera"><span class="punto"></span><span id="txtEsp">Comedero: esperando datos</span></span>
         <button id="btnSalir" class="btn-secundario">Salir</button>
       </div>
     </header>
 
+    <!-- Bienvenida -->
+    <div class="tarjeta bienvenida">
+      <div>
+        <h2>¡Hola! 💕</h2>
+        <p>Aquí puedes ver cómo están la comida y el agua de tus peluditos.</p>
+      </div>
+      <div class="mascotas">
+        <svg class="perro"><use href="#perrito"/></svg>
+        <svg class="gato"><use href="#gatico"/></svg>
+      </div>
+    </div>
+
     <!-- Sensores -->
     <div class="rejilla">
       <div id="tMascota" class="tarjeta sensor">
-        <div class="titulo">🐾 Mascota</div>
+        <div class="icono">🐾</div>
+        <div class="titulo">Mascota</div>
         <div id="vMascota" class="valor">—</div>
         <div id="dMascota" class="detalle">Sin datos todavía</div>
       </div>
       <div id="tAgua" class="tarjeta sensor">
-        <div class="titulo">💧 Agua</div>
+        <div class="icono">💧</div>
+        <div class="titulo">Agua</div>
         <div id="vAgua" class="valor">—</div>
         <div id="dAgua" class="detalle">Sin datos todavía</div>
       </div>
       <div id="tComida" class="tarjeta sensor">
-        <div class="titulo">🍖 Comida</div>
+        <div class="icono">🍖</div>
+        <div class="titulo">Comida</div>
         <div id="vComida" class="valor">—</div>
         <div id="dComida" class="detalle">Sin datos todavía</div>
       </div>
@@ -176,283 +316,322 @@
 
     <!-- Controles -->
     <div class="tarjeta">
-      <h2>Controles</h2>
-      <div class="controles">
-        <button id="btnComida" class="btn-comida">🍖 Dispensar comida</button>
-        <button id="btnAgua" class="btn-agua">💧 Dar agua (3 s)</button>
-        <button id="btnParar" class="btn-parar">⏹ Apagar bomba</button>
+      <h2>🎀 Controles</h2>
+      <div class="grupo-controles">
+        <div class="controles comida">
+          <h3>🍖 Comida</h3>
+          <button id="btnDispensar" class="btn-comida">Dar una porción (2 s)</button>
+          <div class="fila-botones">
+            <button id="btnAbrir" class="btn-borde">🔓 Abrir</button>
+            <button id="btnCerrar" class="btn-borde">🔒 Cerrar</button>
+          </div>
+        </div>
+        <div class="controles agua">
+          <h3>💧 Agua</h3>
+          <button id="btnAgua" class="btn-agua">Dar agua (3 s)</button>
+          <button id="btnParar" class="btn-parar">⏹ Apagar bomba</button>
+        </div>
       </div>
-      <p class="nota">La compuerta se cierra sola a los 2 segundos y la bomba se apaga sola a los 3. Entre una orden y otra hay que esperar 5 segundos.</p>
+      <p class="nota">Si abres la compuerta a mano, se cierra sola a los 30 segundos. La bomba se apaga sola a los 3 segundos, y la comida y el agua nunca salen al mismo tiempo.</p>
     </div>
 
+    <!-- Horarios -->
+    <div class="tarjeta tarjeta-horarios">
+      <h2>⏰ Horarios de comida</h2>
+      <p class="nota" style="margin-top:0">
+        Hora del comedero: <span class="reloj">🕒 <span id="horaEsp">—</span></span><br>
+        Los horarios quedan guardados en el comedero y se cumplen aunque esta página esté cerrada. Primero sale la comida y después el agua (máximo 4 horarios y 10 segundos por acción).
+      </p>
+      <div id="listaHorarios" style="margin-top:14px"></div>
+      <div class="acciones-horario">
+        <button id="btnAgregar" class="btn-borde">➕ Agregar horario</button>
+        <button id="btnGuardar" class="btn-oscuro">💾 Guardar en el comedero</button>
+      </div>
+      <div id="estadoHorarios" class="estado-horarios"></div>
+    </div>
+
+    <!-- Alertas y actividad -->
     <div class="dos-columnas">
       <div class="tarjeta">
-        <h2>Alertas</h2>
+        <h2>🔔 Alertas</h2>
         <ul id="listaAlertas" class="lista"><li class="vacio">Sin alertas.</li></ul>
       </div>
       <div class="tarjeta">
-        <h2>Actividad reciente</h2>
+        <h2>📋 Actividad reciente</h2>
         <ul id="listaEventos" class="lista"><li class="vacio">Sin actividad todavía.</li></ul>
       </div>
     </div>
   </div>
+
+  <footer>Hecho con 💜 para nuestros perritos y gaticos · PetCare</footer>
 </div>
 
 <script>
+// =====================================================================
+// ACCESO: pega aquí la línea que genera "generador.html"
+// =====================================================================
+const CIFRADO = {"sal":"o/KIH9KUVd8IxOzJtCOACQ==","iv":"f5UQTPy16VWyPNqP","iter":250000,"datos":"+0tl2u/1HZT3WZ5bO+kgzOer5InZmh1316VyH65SOEhv3NA+KVAC2sYGhTlfpNr9i02xuxyltADplz1r/X3fbM9Z0KW824ZZhi4="};
+
 // ================= CONFIGURACIÓN =================
 const URL_MQTT = "wss://io.adafruit.com:443/mqtt/";
 const API = "https://io.adafruit.com/api/v2/";
 const SEGUNDOS_DESCONECTADO = 60;   // el ESP32 publica cada 20 s
-const ESPERA_ENTRE_ORDENES = 5000;  // ms, igual que en el ESP32
+const ESPERA_ENTRE_ORDENES = 5000;
+const MAX_HORARIOS = 4;
+const MAX_SEGUNDOS = 10;
 
 // ================= ESTADO =================
-let cliente = null;
-let usuario = "";
-let clave = "";
-let ultimoDato = null;        // fecha del último estado recibido
-let ultimoEstado = null;
-let errorComunicacion = null;
+let cliente = null, aioUsuario = "", aioClave = "";
+let ultimoDato = null, ultimoEstado = null, errorComunicacion = null;
+let editorHorarios = [], horariosEditados = false, horariosEnviados = null;
 const eventos = [];
-
 const $ = (id) => document.getElementById(id);
 
-// ---------- Guardado de credenciales en el navegador ----------
-function guardarCredenciales(u, k, recordar) {
-  try {
-    const almacen = recordar ? localStorage : sessionStorage;
-    almacen.setItem("petcare_usuario", u);
-    almacen.setItem("petcare_clave", k);
-  } catch (e) { /* el navegador no permite guardar: no pasa nada */ }
-}
-function leerCredenciales() {
-  try {
-    for (const almacen of [sessionStorage, localStorage]) {
-      const u = almacen.getItem("petcare_usuario");
-      const k = almacen.getItem("petcare_clave");
-      if (u && k) return { u, k };
-    }
-  } catch (e) {}
-  return null;
-}
-function borrarCredenciales() {
-  try {
-    for (const almacen of [sessionStorage, localStorage]) {
-      almacen.removeItem("petcare_usuario");
-      almacen.removeItem("petcare_clave");
-    }
-  } catch (e) {}
+// ---------- Descifrar las credenciales con usuario + contraseña ----------
+function deBase64(s) { return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+
+async function descifrar(usuario, clave) {
+  const base = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(usuario.toLowerCase() + ":" + clave),
+    "PBKDF2", false, ["deriveKey"]);
+  const llave = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: deBase64(CIFRADO.sal), iterations: CIFRADO.iter, hash: "SHA-256" },
+    base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const plano = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: deBase64(CIFRADO.iv) }, llave, deBase64(CIFRADO.datos));
+  return JSON.parse(new TextDecoder().decode(plano));
 }
 
+function guardarSesion(c) { try { sessionStorage.setItem("petcare_sesion", JSON.stringify(c)); } catch (e) {} }
+function leerSesion() { try { return JSON.parse(sessionStorage.getItem("petcare_sesion")); } catch (e) { return null; } }
+function borrarSesion() { try { sessionStorage.removeItem("petcare_sesion"); } catch (e) {} }
+
 // ---------- Utilidades ----------
-function hora(fecha = new Date()) {
-  return fecha.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-}
+function hora(f = new Date()) { return f.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", second: "2-digit" }); }
 function registrar(texto, color = "a-gris") {
   eventos.unshift({ texto, color, hora: hora() });
   if (eventos.length > 12) eventos.pop();
-  $("listaEventos").innerHTML = eventos
-    .map(e => `<li class="${e.color}"><span>${e.texto}</span><span class="hora">${e.hora}</span></li>`)
-    .join("");
+  $("listaEventos").innerHTML = eventos.map(e => `<li class="${e.color}"><span>${e.texto}</span><span class="hora">${e.hora}</span></li>`).join("");
 }
-function insignia(id, txtId, clase, texto) {
-  $(id).className = "insignia " + clase;
-  $(txtId).textContent = texto;
-}
-function tema(feed) { return `${usuario}/feeds/${feed}`; }
+function insignia(id, txtId, clase, texto) { $(id).className = "insignia " + clase; $(txtId).textContent = texto; }
+function tema(feed) { return `${aioUsuario}/feeds/${feed}`; }
 
 // ---------- Acceso ----------
-async function entrar(u, k, recordar) {
-  $("errorAcceso").textContent = "";
-  $("btnEntrar").disabled = true;
-  $("btnEntrar").textContent = "Verificando…";
-
-  // 1) Verificar la clave y traer el último estado guardado en Adafruit
-  try {
-    const r = await fetch(`${API}${encodeURIComponent(u)}/feeds/petcare-estado/data/last`, {
-      headers: { "X-AIO-Key": k }
-    });
-    if (r.status === 401 || r.status === 403) {
-      throw new Error("Usuario o AIO Key incorrectos.");
-    }
-    if (r.ok) {
-      const dato = await r.json();
-      procesarEstado(dato.value, new Date(dato.created_at));
-    }
-  } catch (e) {
-    if (e.message.includes("incorrectos")) {
-      $("errorAcceso").textContent = e.message;
-      $("btnEntrar").disabled = false;
-      $("btnEntrar").textContent = "Entrar";
-      return;
-    }
-    // Si falla por otra razón (sin internet, bloqueo del navegador), seguimos con MQTT
-  }
-
-  usuario = u;
-  clave = k;
-  guardarCredenciales(u, k, recordar);
+async function iniciarConCredenciales(cred) {
+  aioUsuario = cred.u; aioClave = cred.k;
   $("acceso").classList.add("oculto");
   $("panel").classList.remove("oculto");
-  $("btnEntrar").disabled = false;
-  $("btnEntrar").textContent = "Entrar";
+  try {
+    const r = await fetch(`${API}${encodeURIComponent(aioUsuario)}/feeds/petcare-estado/data/last`, { headers: { "X-AIO-Key": aioClave } });
+    if (r.ok) { const d = await r.json(); procesarEstado(d.value, new Date(d.created_at)); }
+  } catch (e) { /* si falla, igual llegan datos por MQTT */ }
   conectarMqtt();
+}
+
+async function entrar() {
+  $("errorAcceso").textContent = "";
+  if (!CIFRADO) { $("errorAcceso").textContent = "La página aún no está configurada (falta la línea CIFRADO)."; return; }
+  const u = $("usuario").value.trim(), c = $("clave").value;
+  if (!u || !c) { $("errorAcceso").textContent = "Escribe el usuario y la contraseña."; return; }
+  $("btnEntrar").disabled = true; $("btnEntrar").textContent = "Verificando…";
+  try {
+    const cred = await descifrar(u, c);
+    guardarSesion(cred);
+    $("clave").value = "";
+    await iniciarConCredenciales(cred);
+  } catch (e) {
+    $("errorAcceso").textContent = "Usuario o contraseña incorrectos.";
+  }
+  $("btnEntrar").disabled = false; $("btnEntrar").textContent = "Entrar";
 }
 
 function salir() {
   if (cliente) cliente.end(true);
-  cliente = null;
-  borrarCredenciales();
-  $("clave").value = "";
-  $("panel").classList.add("oculto");
-  $("acceso").classList.remove("oculto");
+  cliente = null; aioClave = ""; borrarSesion();
+  $("panel").classList.add("oculto"); $("acceso").classList.remove("oculto");
 }
 
 // ---------- MQTT ----------
 function conectarMqtt() {
   insignia("insigniaNube", "txtNube", "espera", "Conectando…");
   cliente = mqtt.connect(URL_MQTT, {
-    username: usuario,
-    password: clave,
+    username: aioUsuario, password: aioClave,
     clientId: "petcare-web-" + Math.random().toString(16).slice(2, 10),
-    reconnectPeriod: 5000,
-    connectTimeout: 10000,
+    reconnectPeriod: 5000, connectTimeout: 10000,
   });
-
   cliente.on("connect", () => {
     errorComunicacion = null;
     insignia("insigniaNube", "txtNube", "ok", "Nube conectada");
     cliente.subscribe(tema("petcare-estado"));
-    registrar("Conectado a Adafruit IO", "a-verde");
+    registrar("Conectado a la nube", "a-verde");
     actualizarAlertas();
   });
-
-  cliente.on("message", (t, mensaje) => {
-    if (t === tema("petcare-estado")) {
-      procesarEstado(mensaje.toString(), new Date());
-    }
-  });
-
+  cliente.on("message", (t, m) => { if (t === tema("petcare-estado")) procesarEstado(m.toString(), new Date()); });
   cliente.on("reconnect", () => insignia("insigniaNube", "txtNube", "espera", "Reconectando…"));
-  cliente.on("offline", () => {
-    insignia("insigniaNube", "txtNube", "mal", "Sin conexión a la nube");
-    errorComunicacion = "No hay conexión con Adafruit IO.";
-    actualizarAlertas();
-  });
-  cliente.on("error", (e) => {
-    insignia("insigniaNube", "txtNube", "mal", "Error de conexión");
-    errorComunicacion = "Error de comunicación: " + e.message;
-    actualizarAlertas();
-  });
+  cliente.on("offline", () => { insignia("insigniaNube", "txtNube", "mal", "Sin conexión a la nube"); errorComunicacion = "No hay conexión con la nube."; actualizarAlertas(); });
+  cliente.on("error", (e) => { insignia("insigniaNube", "txtNube", "mal", "Error de conexión"); errorComunicacion = "Error de comunicación: " + e.message; actualizarAlertas(); });
 }
 
-function enviarOrden(orden, descripcion, boton) {
-  if (!cliente || !cliente.connected) {
-    registrar("No se pudo enviar: sin conexión", "a-rojo");
-    return;
-  }
+function enviarOrden(orden, descripcion, bloquear) {
+  if (!cliente || !cliente.connected) { registrar("No se pudo enviar: sin conexión", "a-rojo"); return false; }
   cliente.publish(tema("petcare-comandos"), orden, {}, (err) => {
-    if (err) {
-      registrar("Error al enviar " + orden, "a-rojo");
-    } else {
-      registrar(descripcion, "a-gris");
-    }
+    registrar(err ? "Error al enviar la orden" : descripcion, err ? "a-rojo" : "a-gris");
   });
-  // Bloquear los botones de acción unos segundos para no repetir órdenes
-  if (boton) {
-    for (const id of ["btnComida", "btnAgua"]) $(id).disabled = true;
-    setTimeout(() => { for (const id of ["btnComida", "btnAgua"]) $(id).disabled = false; }, ESPERA_ENTRE_ORDENES);
+  if (bloquear) {
+    const ids = ["btnDispensar", "btnAbrir", "btnAgua"];
+    ids.forEach(id => $(id).disabled = true);
+    setTimeout(() => ids.forEach(id => $(id).disabled = false), ESPERA_ENTRE_ORDENES);
   }
+  return true;
 }
 
 // ---------- Mostrar datos ----------
 function procesarEstado(texto, fecha) {
   let e;
-  try { e = JSON.parse(texto); } catch (err) { return; }   // mensajes de prueba antiguos
+  try { e = JSON.parse(texto); } catch (err) { return; }
   if (typeof e !== "object" || e === null || !("mascota" in e)) return;
-
   const anterior = ultimoEstado;
-  ultimoEstado = e;
-  ultimoDato = fecha;
+  ultimoEstado = e; ultimoDato = fecha;
 
-  // Mascota
   $("vMascota").textContent = e.mascota ? "Detectada" : "No está cerca";
   $("dMascota").textContent = e.d_mascota != null ? `Distancia: ${e.d_mascota} cm` : "Lectura no válida";
   $("tMascota").className = "tarjeta sensor " + (e.mascota ? "aviso" : "");
 
-  // Agua
   $("vAgua").textContent = e.d_agua == null ? "Sin lectura" : (e.poca_agua ? "Nivel bajo" : "Nivel bien");
   $("dAgua").textContent = e.d_agua != null ? `Distancia a la superficie: ${e.d_agua} cm` : "Revisa el sensor de agua";
   $("tAgua").className = "tarjeta sensor " + (e.d_agua == null ? "" : (e.poca_agua ? "alerta" : "bien"));
 
-  // Comida
   $("vComida").textContent = e.d_comida == null ? "Sin lectura" : (e.poca_comida ? "Nivel bajo" : "Nivel bien");
   $("dComida").textContent = e.d_comida != null ? `Distancia a la superficie: ${e.d_comida} cm` : "Revisa el sensor de comida";
   $("tComida").className = "tarjeta sensor " + (e.d_comida == null ? "" : (e.poca_comida ? "alerta" : "bien"));
 
-  // Eventos cuando algo cambia
+  $("horaEsp").textContent = e.hora ? e.hora : "sin sincronizar (los horarios esperan a tener hora)";
+
   if (anterior) {
     if (e.mascota && !anterior.mascota) registrar("🐾 Mascota detectada", "a-ambar");
     if (e.poca_agua && !anterior.poca_agua) registrar("💧 El agua está baja", "a-rojo");
     if (e.poca_comida && !anterior.poca_comida) registrar("🍖 La comida está baja", "a-rojo");
   }
 
+  if (Array.isArray(e.horarios)) recibirHorarios(e.horarios);
   revisarConexionEsp();
   actualizarAlertas();
 }
 
-function espConectado() {
-  if (!ultimoDato) return false;
-  return (Date.now() - ultimoDato.getTime()) / 1000 < SEGUNDOS_DESCONECTADO;
-}
-
+function espConectado() { return ultimoDato && (Date.now() - ultimoDato.getTime()) / 1000 < SEGUNDOS_DESCONECTADO; }
 function revisarConexionEsp() {
-  if (!ultimoDato) {
-    insignia("insigniaEsp", "txtEsp", "espera", "ESP32: esperando datos");
-  } else if (espConectado()) {
-    insignia("insigniaEsp", "txtEsp", "ok", "ESP32 en línea · " + hora(ultimoDato));
-  } else {
-    insignia("insigniaEsp", "txtEsp", "mal", "ESP32 desconectado");
-  }
+  if (!ultimoDato) insignia("insigniaEsp", "txtEsp", "espera", "Comedero: esperando datos");
+  else if (espConectado()) insignia("insigniaEsp", "txtEsp", "ok", "Comedero en línea · " + hora(ultimoDato));
+  else insignia("insigniaEsp", "txtEsp", "mal", "Comedero desconectado");
 }
-
 function actualizarAlertas() {
-  const alertas = [];
-  if (errorComunicacion) alertas.push(["⚠️ " + errorComunicacion, "a-rojo"]);
-  if (ultimoDato && !espConectado()) {
-    alertas.push([`📡 ESP32 desconectado (último dato a las ${hora(ultimoDato)})`, "a-rojo"]);
-  }
+  const a = [];
+  if (errorComunicacion) a.push(["⚠️ " + errorComunicacion, "a-rojo"]);
+  if (ultimoDato && !espConectado()) a.push([`📡 Comedero desconectado (último dato a las ${hora(ultimoDato)})`, "a-rojo"]);
   if (ultimoEstado) {
-    if (ultimoEstado.poca_agua) alertas.push(["💧 Nivel de agua bajo", "a-rojo"]);
-    if (ultimoEstado.poca_comida) alertas.push(["🍖 Nivel de comida bajo", "a-rojo"]);
-    if (ultimoEstado.mascota) alertas.push(["🐾 Mascota detectada junto al comedero", "a-ambar"]);
+    if (ultimoEstado.poca_agua) a.push(["💧 Nivel de agua bajo", "a-rojo"]);
+    if (ultimoEstado.poca_comida) a.push(["🍖 Nivel de comida bajo", "a-rojo"]);
+    if (ultimoEstado.mascota) a.push(["🐾 Mascota detectada junto al comedero", "a-ambar"]);
   }
-  $("listaAlertas").innerHTML = alertas.length
-    ? alertas.map(([t, c]) => `<li class="${c}"><span>${t}</span></li>`).join("")
-    : `<li class="vacio">Sin alertas. Todo en orden.</li>`;
+  $("listaAlertas").innerHTML = a.length ? a.map(([t, c]) => `<li class="${c}"><span>${t}</span></li>`).join("") : `<li class="vacio">Sin alertas. ¡Todo en orden! 🐶🐱</li>`;
 }
-
-// Revisar cada 5 s si el ESP32 dejó de enviar datos
 setInterval(() => { revisarConexionEsp(); actualizarAlertas(); }, 5000);
 
-// ---------- Botones ----------
-$("btnEntrar").addEventListener("click", () => {
-  const u = $("usuario").value.trim();
-  const k = $("clave").value.trim();
-  if (!u || !k) { $("errorAcceso").textContent = "Escribe el usuario y la AIO Key."; return; }
-  entrar(u, k, $("recordar").checked);
-});
-$("clave").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btnEntrar").click(); });
-$("btnSalir").addEventListener("click", salir);
-$("btnComida").addEventListener("click", () => enviarOrden("DISPENSAR", "🍖 Orden enviada: dispensar comida", true));
-$("btnAgua").addEventListener("click", () => enviarOrden("AGUA_ON", "💧 Orden enviada: dar agua", true));
-$("btnParar").addEventListener("click", () => enviarOrden("AGUA_OFF", "⏹ Orden enviada: apagar bomba", false));
-
-// Entrar automáticamente si ya había credenciales guardadas
-const guardadas = leerCredenciales();
-if (guardadas) {
-  $("usuario").value = guardadas.u;
-  entrar(guardadas.u, guardadas.k, false);
+// ---------- Horarios ----------
+function normalizar(lista) {
+  return lista.map(h => ({ h: h.h, c: parseInt(h.c) || 0, a: parseInt(h.a) || 0 }))
+              .sort((x, y) => x.h.localeCompare(y.h));
 }
+
+function recibirHorarios(lista) {
+  const delComedero = JSON.stringify(normalizar(lista));
+  if (horariosEnviados !== null && delComedero === horariosEnviados) {
+    horariosEnviados = null; horariosEditados = false;
+    mensajeHorarios("✅ Horarios guardados en el comedero.", "ok");
+    registrar("⏰ Horarios guardados en el comedero", "a-verde");
+  }
+  if (!horariosEditados) {
+    editorHorarios = normalizar(lista);
+    dibujarHorarios();
+  }
+}
+
+function mensajeHorarios(texto, clase) { const el = $("estadoHorarios"); el.textContent = texto; el.className = "estado-horarios " + (clase || ""); }
+
+function campo(etiqueta, input) {
+  const div = document.createElement("div");
+  const lab = document.createElement("label"); lab.textContent = etiqueta;
+  div.appendChild(lab); div.appendChild(input);
+  return div;
+}
+
+function dibujarHorarios() {
+  const cont = $("listaHorarios");
+  cont.innerHTML = "";
+  if (!editorHorarios.length) {
+    cont.innerHTML = `<p class="vacio">No hay horarios. Presiona "+ Agregar horario".</p>`;
+  }
+  editorHorarios.forEach((h, i) => {
+    const fila = document.createElement("div"); fila.className = "horario";
+
+    const iHora = document.createElement("input"); iHora.type = "time"; iHora.value = h.h;
+    iHora.addEventListener("input", () => { editorHorarios[i].h = iHora.value; marcarEditado(); });
+
+    const iComida = document.createElement("input"); iComida.type = "number"; iComida.min = 0; iComida.max = MAX_SEGUNDOS; iComida.value = h.c;
+    iComida.addEventListener("input", () => { editorHorarios[i].c = iComida.value; marcarEditado(); });
+
+    const iAgua = document.createElement("input"); iAgua.type = "number"; iAgua.min = 0; iAgua.max = MAX_SEGUNDOS; iAgua.value = h.a;
+    iAgua.addEventListener("input", () => { editorHorarios[i].a = iAgua.value; marcarEditado(); });
+
+    const quitar = document.createElement("button"); quitar.className = "btn-quitar"; quitar.textContent = "✕"; quitar.title = "Quitar horario";
+    quitar.addEventListener("click", () => { editorHorarios.splice(i, 1); marcarEditado(); dibujarHorarios(); });
+
+    fila.appendChild(campo("Hora", iHora));
+    fila.appendChild(campo("Comida (s)", iComida));
+    fila.appendChild(campo("Agua (s)", iAgua));
+    fila.appendChild(quitar);
+    cont.appendChild(fila);
+  });
+  $("btnAgregar").disabled = editorHorarios.length >= MAX_HORARIOS;
+}
+
+function marcarEditado() { horariosEditados = true; mensajeHorarios("Cambios sin guardar.", "pend"); }
+
+function guardarHorarios() {
+  for (const h of editorHorarios) {
+    const c = parseInt(h.c), a = parseInt(h.a);
+    if (!/^\d{2}:\d{2}$/.test(h.h || "")) { mensajeHorarios("Falta la hora en algún horario.", "err"); return; }
+    if (isNaN(c) || isNaN(a) || c < 0 || a < 0 || c > MAX_SEGUNDOS || a > MAX_SEGUNDOS) {
+      mensajeHorarios(`Los segundos deben estar entre 0 y ${MAX_SEGUNDOS}.`, "err"); return;
+    }
+    if (c === 0 && a === 0) { mensajeHorarios(`El horario de las ${h.h} no tiene comida ni agua.`, "err"); return; }
+  }
+  const lista = normalizar(editorHorarios);
+  const texto = JSON.stringify(lista);
+  if (enviarOrden("HORARIOS:" + texto, "⏰ Horarios enviados al comedero", false)) {
+    horariosEnviados = texto;
+    mensajeHorarios("Enviando… esperando confirmación del comedero (hasta 20 s).", "pend");
+  }
+}
+
+// ---------- Botones ----------
+$("btnEntrar").addEventListener("click", entrar);
+$("clave").addEventListener("keydown", (e) => { if (e.key === "Enter") entrar(); });
+$("btnSalir").addEventListener("click", salir);
+$("btnDispensar").addEventListener("click", () => enviarOrden("DISPENSAR", "🍖 Dispensar una porción", true));
+$("btnAbrir").addEventListener("click", () => enviarOrden("ABRIR", "🔓 Abrir compuerta", true));
+$("btnCerrar").addEventListener("click", () => enviarOrden("CERRAR", "🔒 Cerrar compuerta", false));
+$("btnAgua").addEventListener("click", () => enviarOrden("AGUA_ON", "💧 Dar agua", true));
+$("btnParar").addEventListener("click", () => enviarOrden("AGUA_OFF", "⏹ Apagar bomba", false));
+$("btnAgregar").addEventListener("click", () => {
+  if (editorHorarios.length >= MAX_HORARIOS) return;
+  editorHorarios.push({ h: "12:00", c: 2, a: 3 }); marcarEditado(); dibujarHorarios();
+});
+$("btnGuardar").addEventListener("click", guardarHorarios);
+
+dibujarHorarios();
+const sesion = leerSesion();
+if (sesion && sesion.u && sesion.k) iniciarConCredenciales(sesion);
 </script>
 </body>
 </html>
