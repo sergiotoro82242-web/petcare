@@ -329,10 +329,13 @@
         <div class="controles agua">
           <h3>💧 Agua</h3>
           <button id="btnAgua" class="btn-agua">Dar agua (3 s)</button>
-          <button id="btnParar" class="btn-parar">⏹ Apagar bomba</button>
+          <div class="fila-botones">
+            <button id="btnEncenderBomba" class="btn-borde">▶ Encender</button>
+            <button id="btnParar" class="btn-parar">⏹ Apagar</button>
+          </div>
         </div>
       </div>
-      <p class="nota">Si abres la compuerta a mano, se cierra sola a los 30 segundos. La bomba se apaga sola a los 3 segundos, y la comida y el agua nunca salen al mismo tiempo.</p>
+      <p class="nota">Por seguridad, si abres la compuerta a mano se cierra sola a los 30 segundos, y si enciendes la bomba a mano se apaga sola al minuto. La comida y el agua nunca salen al mismo tiempo.</p>
     </div>
 
     <!-- Horarios -->
@@ -442,7 +445,7 @@ async function entrar() {
   } catch (e) {
     $("errorAcceso").textContent = "Usuario o contraseña incorrectos.";
   }
-  $("btnEntrar").disabled = false; $("btnEntrar").textContent = "Entrar";
+  $("btnEntrar").disabled = false; $("btnEntrar").textContent = "Entrar 🐾";
 }
 
 function salir() {
@@ -478,7 +481,7 @@ function enviarOrden(orden, descripcion, bloquear) {
     registrar(err ? "Error al enviar la orden" : descripcion, err ? "a-rojo" : "a-gris");
   });
   if (bloquear) {
-    const ids = ["btnDispensar", "btnAbrir", "btnAgua"];
+    const ids = ["btnDispensar", "btnAbrir", "btnAgua", "btnEncenderBomba"];
     ids.forEach(id => $(id).disabled = true);
     setTimeout(() => ids.forEach(id => $(id).disabled = false), ESPERA_ENTRE_ORDENES);
   }
@@ -622,7 +625,8 @@ $("btnDispensar").addEventListener("click", () => enviarOrden("DISPENSAR", "🍖
 $("btnAbrir").addEventListener("click", () => enviarOrden("ABRIR", "🔓 Abrir compuerta", true));
 $("btnCerrar").addEventListener("click", () => enviarOrden("CERRAR", "🔒 Cerrar compuerta", false));
 $("btnAgua").addEventListener("click", () => enviarOrden("AGUA_ON", "💧 Dar agua", true));
-$("btnParar").addEventListener("click", () => enviarOrden("AGUA_OFF", "⏹ Apagar bomba", false));
+$("btnEncenderBomba").addEventListener("click", () => enviarOrden("BOMBA_ON", "▶ Encender bomba", true));
+$("btnParar").addEventListener("click", () => enviarOrden("BOMBA_OFF", "⏹ Apagar bomba", false));
 $("btnAgregar").addEventListener("click", () => {
   if (editorHorarios.length >= MAX_HORARIOS) return;
   editorHorarios.push({ h: "12:00", c: 2, a: 3 }); marcarEditado(); dibujarHorarios();
